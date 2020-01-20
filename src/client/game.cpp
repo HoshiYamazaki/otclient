@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -431,14 +431,14 @@ void Game::processRemoveAutomapFlag(const Position& pos, int icon, const std::st
     g_lua.callGlobalField("g_game", "onRemoveAutomapFlag", pos, icon, message);
 }
 
-void Game::processOpenOutfitWindow(const Outfit& currentOufit, const std::vector<std::tuple<int, std::string, int> >& outfitList,
+void Game::processOpenOutfitWindow(const Outfit& currentOutfit, const std::vector<std::tuple<int, std::string, int> >& outfitList,
                                    const std::vector<std::tuple<int, std::string> >& mountList)
 {
     // create virtual creature outfit
     CreaturePtr virtualOutfitCreature = CreaturePtr(new Creature);
     virtualOutfitCreature->setDirection(Otc::South);
 
-    Outfit outfit = currentOufit;
+    Outfit outfit = currentOutfit;
     outfit.setMount(0);
     virtualOutfitCreature->setOutfit(outfit);
 
@@ -452,7 +452,7 @@ void Game::processOpenOutfitWindow(const Outfit& currentOufit, const std::vector
         Outfit mountOutfit;
         mountOutfit.setId(0);
 
-        int mount = currentOufit.getMount();
+        int mount = currentOutfit.getMount();
         if(mount > 0)
             mountOutfit.setId(mount);
 
@@ -654,6 +654,12 @@ bool Game::walk(Otc::Direction direction, bool dash)
 
     m_localPlayer->stopAutoWalk();
 
+    if(getClientVersion() <= 740) {
+        const TilePtr& fromTile = g_map.getTile(m_localPlayer->getPosition());
+        if (fromTile && toTile && (toTile->getElevation() - 1 > fromTile->getElevation()))
+            return false;
+    }
+
     g_lua.callGlobalField("g_game", "onWalk", direction, dash);
 
     forceWalk(direction);
@@ -680,7 +686,7 @@ void Game::autoWalk(std::vector<Otc::Direction> dirs)
         return;
     }
 
-    if(dirs.size() == 0)
+    if(dirs.empty())
         return;
 
     // must cancel follow before any new walk
@@ -778,12 +784,12 @@ void Game::stop()
     m_protocolGame->sendStop();
 }
 
-void Game::look(const ThingPtr& thing)
+void Game::look(const ThingPtr& thing, bool isBattleList)
 {
     if(!canPerformGameAction() || !thing)
         return;
 
-    if(thing->isCreature() && m_protocolVersion >= 961)
+    if(thing->isCreature() && isBattleList && m_protocolVersion >= 961)
         m_protocolGame->sendLookCreature(thing->getId());
     else
         m_protocolGame->sendLook(thing->getPosition(), thing->getId(), thing->getStackPos());
@@ -856,7 +862,10 @@ void Game::useWith(const ItemPtr& item, const ThingPtr& toThing)
     if(!pos.isValid()) // virtual item
         pos = Position(0xFFFF, 0, 0); // means that is an item in inventory
 
-    m_protocolGame->sendUseItemWith(pos, item->getId(), item->getStackPos(), toThing->getPosition(), toThing->getId(), toThing->getStackPos());
+    if(toThing->isCreature())
+        m_protocolGame->sendUseOnCreature(pos, item->getId(), item->getStackPos(), toThing->getId());
+    else
+        m_protocolGame->sendUseItemWith(pos, item->getId(), item->getStackPos(), toThing->getPosition(), toThing->getId(), toThing->getStackPos());
 }
 
 void Game::useInventoryItemWith(int itemId, const ThingPtr& toThing)
@@ -1374,7 +1383,7 @@ void Game::requestItemInfo(const ItemPtr& item, int index)
     m_protocolGame->sendRequestItemInfo(item->getId(), item->getSubType(), index);
 }
 
-void Game::answerModalDialog(int dialog, int button, int choice)
+void Game::answerModalDialog(uint32 dialog, int button, int choice)
 {
     if(!canPerformGameAction())
         return;
@@ -1393,6 +1402,48 @@ void Game::seekInContainer(int cid, int index)
     if(!canPerformGameAction())
         return;
     m_protocolGame->sendSeekInContainer(cid, index);
+}
+
+void Game::buyStoreOffer(int offerId, int productType, const std::string& name)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendBuyStoreOffer(offerId, productType, name);
+}
+
+void Game::requestTransactionHistory(int page, int entriesPerPage)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendRequestTransactionHistory(page, entriesPerPage);
+}
+
+void Game::requestStoreOffers(const std::string& categoryName, int serviceType)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendRequestStoreOffers(categoryName, serviceType);
+}
+
+void Game::openStore(int serviceType, const std::string& category)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendOpenStore(serviceType, category);
+}
+
+void Game::transferCoins(const std::string& recipient, int amount)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendTransferCoins(recipient, amount);
+}
+
+void Game::openTransactionHistory(int entriesPerPage)
+{
+    if(!canPerformGameAction())
+        return;
+    m_protocolGame->sendOpenTransactionHistory(entriesPerPage);
 }
 
 void Game::ping()
@@ -1450,7 +1501,7 @@ void Game::setProtocolVersion(int version)
     if(isOnline())
         stdext::throw_exception("Unable to change protocol version while online");
 
-    if(version != 0 && (version < 740 || version > 1076))
+    if(version != 0 && (version < 740 || version > 1099))
         stdext::throw_exception(stdext::format("Protocol version %d not supported", version));
 
     m_protocolVersion = version;
@@ -1468,7 +1519,7 @@ void Game::setClientVersion(int version)
     if(isOnline())
         stdext::throw_exception("Unable to change client version while online");
 
-    if(version != 0 && (version < 740 || version > 1076))
+    if(version != 0 && (version < 740 || version > 1099))
         stdext::throw_exception(stdext::format("Client version %d not supported", version));
 
     m_features.reset();
@@ -1600,6 +1651,10 @@ void Game::setClientVersion(int version)
         enableFeature(Otc::GameDeathType);
     }
 
+    if(version >= 1057) {
+        enableFeature(Otc::GameIdleAnimations);
+    }
+
     if(version >= 1061) {
         enableFeature(Otc::GameOGLInformation);
     }
@@ -1614,6 +1669,22 @@ void Game::setClientVersion(int version)
 
     if(version >= 1074) {
         enableFeature(Otc::GameSessionKey);
+    }
+
+    if(version >= 1080) {
+        enableFeature(Otc::GameIngameStore);
+    }
+
+    if(version >= 1092) {
+        enableFeature(Otc::GameIngameStoreServiceType);
+    }
+
+    if(version >= 1093) {
+        enableFeature(Otc::GameIngameStoreHighlights);
+    }
+
+    if(version >= 1094) {
+        enableFeature(Otc::GameAdditionalSkills);
     }
 
     m_clientVersion = version;
@@ -1644,10 +1715,10 @@ std::string Game::formatCreatureName(const std::string& name)
     std::string formatedName = name;
     if(getFeature(Otc::GameFormatCreatureName) && name.length() > 0) {
         bool upnext = true;
-        for(uint i=0;i<formatedName.length();++i) {
-            char ch = formatedName[i];
+        for(char &i: formatedName) {
+            char ch = i;
             if(upnext) {
-                formatedName[i] = stdext::upchar(ch);
+                i = stdext::upchar(ch);
                 upnext = false;
             }
             if(ch == ' ')

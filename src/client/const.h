@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -60,11 +60,12 @@ namespace Otc
         DrawBars = 4096,
         DrawNames = 8192,
         DrawLights = 16384,
+        DrawManaBar = 32768,
         DrawWalls = DrawOnBottom | DrawOnTop,
         DrawEverything = DrawGround | DrawGroundBorders | DrawWalls | DrawItems |
                          DrawCreatures | DrawEffects | DrawMissiles | DrawCreaturesInformation |
                          DrawStaticTexts | DrawAnimatedTexts | DrawAnimations | DrawBars | DrawNames |
-                         DrawLights
+                         DrawLights | DrawManaBar
     };
 
     enum DatOpts {
@@ -148,6 +149,12 @@ namespace Otc
         Distance,
         Shielding,
         Fishing,
+        CriticalChance,
+        CriticalDamage,
+        LifeLeechChance,
+        LifeLeechAmount,
+        ManaLeechChance,
+        ManaLeechAmount,
         LastSkill
     };
 
@@ -318,19 +325,20 @@ namespace Otc
         MessageTutorialHint            = 38,
         MessageThankyou                = 39,
         MessageMarket                  = 40,
-        MessageBeyondLast              = 41,
+        MessageMana                    = 41,
+        MessageBeyondLast              = 42,
 
         // deprecated
-        MessageMonsterYell             = 42,
-        MessageMonsterSay              = 43,
-        MessageRed                     = 44,
-        MessageBlue                    = 45,
-        MessageRVRChannel              = 46,
-        MessageRVRAnswer               = 47,
-        MessageRVRContinue             = 48,
-        MessageGameHighlight           = 49,
-        MessageNpcFromStartBlock       = 50,
-        LastMessage                    = 51,
+        MessageMonsterYell             = 43,
+        MessageMonsterSay              = 44,
+        MessageRed                     = 45,
+        MessageBlue                    = 46,
+        MessageRVRChannel              = 47,
+        MessageRVRAnswer               = 48,
+        MessageRVRContinue             = 49,
+        MessageGameHighlight           = 50,
+        MessageNpcFromStartBlock       = 51,
+        LastMessage                    = 52,
         MessageInvalid                 = 255
     };
 
@@ -403,6 +411,12 @@ namespace Otc
         GameUnjustifiedPoints = 68,
         GameSessionKey = 69,
         GameDeathType = 70,
+        GameIdleAnimations = 71,
+        GameKeepUnawareTiles = 72,
+        GameIngameStore = 73,
+        GameIngameStoreHighlights = 74,
+        GameIngameStoreServiceType = 75,
+        GameAdditionalSkills = 76,
 
         LastGameFeature = 101
     };
@@ -471,6 +485,27 @@ namespace Otc
     enum DeathType {
         DeathRegular = 0,
         DeathBlessed = 1
+    };
+
+    enum StoreProductTypes {
+        ProductTypeOther = 0,
+        ProductTypeNameChange = 1
+    };
+
+    enum StoreErrorTypes {
+        StoreNoError = -1,
+        StorePurchaseError = 0,
+        StoreNetworkError = 1,
+        StoreHistoryError = 2,
+        StoreTransferError = 3,
+        StoreInformation = 4
+    };
+
+    enum StoreStates {
+        StateNone = 0,
+        StateNew = 1,
+        StateSale = 2,
+        StateTimed = 3
     };
 }
 

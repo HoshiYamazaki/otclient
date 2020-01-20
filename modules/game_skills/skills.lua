@@ -78,6 +78,11 @@ function resetSkillColor(id)
   widget:setColor('#bbbbbb')
 end
 
+function toggleSkill(id, state)
+  local skill = skillsWindow:recursiveGetChildById(id)
+  skill:setVisible(state)
+end
+
 function setSkillBase(id, value, baseValue)
   if baseValue <= 0 or value < 0 then
     return
@@ -115,13 +120,19 @@ function setSkillTooltip(id, value)
   widget:setTooltip(value)
 end
 
-function setSkillPercent(id, percent, tooltip)
+function setSkillPercent(id, percent, tooltip, color)
   local skill = skillsWindow:recursiveGetChildById(id)
   local widget = skill:getChildById('percent')
-  widget:setPercent(math.floor(percent))
+  if widget then
+    widget:setPercent(math.floor(percent))
 
-  if tooltip then
-    widget:setTooltip(tooltip)
+    if tooltip then
+      widget:setTooltip(tooltip)
+    end
+
+    if color then
+    	widget:setBackgroundColor(color)
+    end
   end
 end
 
@@ -204,16 +215,25 @@ function refresh()
   onRegenerationChange(player, player:getRegenerationTime())
   onSpeedChange(player, player:getSpeed())
 
-  for i=0,6 do
+  local hasAdditionalSkills = g_game.getFeature(GameAdditionalSkills)
+  for i = Skill.Fist, Skill.ManaLeechAmount do
     onSkillChange(player, i, player:getSkillLevel(i), player:getSkillLevelPercent(i))
     onBaseSkillChange(player, i, player:getSkillBaseLevel(i))
+
+    if i > Skill.Fishing then
+      toggleSkill('skillId'..i, hasAdditionalSkills)
+    end
   end
 
   update()
 
   local contentsPanel = skillsWindow:getChildById('contentsPanel')
   skillsWindow:setContentMinimumHeight(44)
-  skillsWindow:setContentMaximumHeight(390)
+  if hasAdditionalSkills then
+    skillsWindow:setContentMaximumHeight(480)
+  else
+    skillsWindow:setContentMaximumHeight(390)
+  end
 end
 
 function offline()
@@ -317,10 +337,34 @@ function onStaminaChange(localPlayer, stamina)
   if minutes < 10 then
     minutes = '0' .. minutes
   end
-  local percent = math.floor(100 * stamina / (42 * 60)) -- max is 42 hours
+  local percent = math.floor(100 * stamina / (42 * 60)) -- max is 42 hours --TODO not in all client versions
 
   setSkillValue('stamina', hours .. ":" .. minutes)
-  setSkillPercent('stamina', percent, tr('You have %s percent', percent))
+
+  --TODO not all client versions have premium time
+  if stamina > 2400 and g_game.getClientVersion() >= 1038 and localPlayer:isPremium() then
+  	local text = tr("You have %s hours and %s minutes left", hours, minutes) .. '\n' ..
+		tr("Now you will gain 50%% more experience")
+		setSkillPercent('stamina', percent, text, 'green')
+	elseif stamina > 2400 and g_game.getClientVersion() >= 1038 and not localPlayer:isPremium() then
+		local text = tr("You have %s hours and %s minutes left", hours, minutes) .. '\n' ..
+		tr("You will not gain 50%% more experience because you aren't premium player, now you receive only 1x experience points")
+		setSkillPercent('stamina', percent, text, '#89F013')
+	elseif stamina > 2400 and g_game.getClientVersion() < 1038 then
+		local text = tr("You have %s hours and %s minutes left", hours, minutes) .. '\n' ..
+		tr("If you are premium player, you will gain 50%% more experience")
+		setSkillPercent('stamina', percent, text, 'green')
+	elseif stamina <= 2400 and stamina > 840 then
+		setSkillPercent('stamina', percent, tr("You have %s hours and %s minutes left", hours, minutes), 'orange')
+	elseif stamina <= 840 and stamina > 0 then
+		local text = tr("You have %s hours and %s minutes left", hours, minutes) .. "\n" ..
+		tr("You gain only 50%% experience and you don't may gain loot from monsters")
+		setSkillPercent('stamina', percent, text, 'red')
+	elseif stamina == 0 then
+		local text = tr("You have %s hours and %s minutes left", hours, minutes) .. "\n" ..
+		tr("You don't may receive experience and loot from monsters")
+		setSkillPercent('stamina', percent, text, 'black')
+	end
 end
 
 function onOfflineTrainingChange(localPlayer, offlineTrainingTime)

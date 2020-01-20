@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,12 +55,12 @@ public:
     void sendTurnSouth();
     void sendTurnWest();
     void sendEquipItem(int itemId, int countOrSubType);
-    void sendMove(const Position& fromPos, int itemId, int stackpos, const Position& toPos, int count);
+    void sendMove(const Position& fromPos, int thingId, int stackpos, const Position& toPos, int count);
     void sendInspectNpcTrade(int itemId, int count);
     void sendBuyItem(int itemId, int subType, int amount, bool ignoreCapacity, bool buyWithBackpack);
     void sendSellItem(int itemId, int subType, int amount, bool ignoreEquipped);
     void sendCloseNpcTrade();
-    void sendRequestTrade(const Position& pos, int thingId, int stackpos, uint playerId);
+    void sendRequestTrade(const Position& pos, int thingId, int stackpos, uint creatureId);
     void sendInspectTrade(bool counterOffer, int index);
     void sendAcceptTrade();
     void sendRejectTrade();
@@ -110,9 +110,15 @@ public:
     void sendRequestQuestLine(int questId);
     void sendNewNewRuleViolation(int reason, int action, const std::string& characterName, const std::string& comment, const std::string& translation);
     void sendRequestItemInfo(int itemId, int subType, int index);
-    void sendAnswerModalDialog(int dialog, int button, int choice);
+    void sendAnswerModalDialog(uint32 dialog, int button, int choice);
     void sendBrowseField(const Position& position);
     void sendSeekInContainer(int cid, int index);
+    void sendBuyStoreOffer(int offerId, int productType, const std::string& name);
+    void sendRequestTransactionHistory(int page, int entriesPerPage);
+    void sendRequestStoreOffers(const std::string& categoryName, int serviceType);
+    void sendOpenStore(int serviceType, const std::string &category);
+    void sendTransferCoins(const std::string& recipient, int amount);
+    void sendOpenTransactionHistory(int entriesPerPage);
 
     // otclient only
     void sendChangeMapAwareRange(int xrange, int yrange);
@@ -128,6 +134,16 @@ public:
     void addPosition(const OutputMessagePtr& msg, const Position& position);
 
 private:
+    void parseStoreButtonIndicators(const InputMessagePtr& msg);
+    void parseSetStoreDeepLink(const InputMessagePtr& msg);
+    void parseStore(const InputMessagePtr& msg);
+    void parseStoreError(const InputMessagePtr& msg);
+    void parseStoreTransactionHistory(const InputMessagePtr& msg);
+    void parseStoreOffers(const InputMessagePtr& msg);
+    void parseCompleteStorePurchase(const InputMessagePtr& msg);
+    void parseRequestPurchaseData(const InputMessagePtr& msg);
+    void parseCoinBalance(const InputMessagePtr& msg);
+    void parseCoinBalanceUpdating(const InputMessagePtr& msg);
     void parseBlessings(const InputMessagePtr& msg);
     void parseUnjustifiedStats(const InputMessagePtr& msg);
     void parsePvpSituations(const InputMessagePtr& msg);

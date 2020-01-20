@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -63,8 +63,7 @@ void Tile::draw(const Point& dest, float scaleFactor, int drawFlags, LightView *
 
             bool restore = false;
             if(g_map.showZones() && thing->isGround()) {
-                for(unsigned int i = 0; i < sizeof(flags) / sizeof(tileflags_t); ++i) {
-                    tileflags_t flag = flags[i];
+                for(auto flag: flags) {
                     if(hasFlag(flag) && g_map.showZone(flag)) {
                         g_painter->setOpacity(g_map.getZoneOpacity());
                         g_painter->setColor(g_map.getZoneColor(flag));
@@ -155,7 +154,7 @@ void Tile::draw(const Point& dest, float scaleFactor, int drawFlags, LightView *
     // effects
     if(drawFlags & Otc::DrawEffects)
         for(const EffectPtr& effect : m_effects)
-            effect->draw(dest - m_drawElevation*scaleFactor, scaleFactor, animate, m_position.x - g_map.getCentralPosition().x, m_position.y - g_map.getCentralPosition().y, lightView);
+            effect->drawEffect(dest - m_drawElevation*scaleFactor, scaleFactor, animate, m_position.x - g_map.getCentralPosition().x, m_position.y - g_map.getCentralPosition().y, lightView);
 
     // top items
     if(drawFlags & Otc::DrawOnTop)
@@ -195,7 +194,10 @@ void Tile::addThing(const ThingPtr& thing, int stackPos)
         return;
 
     if(thing->isEffect()) {
-        m_effects.push_back(thing->static_self_cast<Effect>());
+        if(thing->isTopEffect())
+            m_effects.insert(m_effects.begin(), thing->static_self_cast<Effect>());
+        else
+            m_effects.push_back(thing->static_self_cast<Effect>());
     } else {
         // priority                                    854
         // 0 - ground,                        -->      -->
@@ -383,8 +385,7 @@ ThingPtr Tile::getTopLookThing()
     if(isEmpty())
         return nullptr;
 
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if(!thing->isIgnoreLook() && (!thing->isGround() && !thing->isGroundBorder() && !thing->isOnBottom() && !thing->isOnTop()))
             return thing;
     }
@@ -397,14 +398,12 @@ ThingPtr Tile::getTopUseThing()
     if(isEmpty())
         return nullptr;
 
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if (thing->isForceUse() || (!thing->isGround() && !thing->isGroundBorder() && !thing->isOnBottom() && !thing->isOnTop() && !thing->isCreature() && !thing->isSplash()))
             return thing;
     }
 
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if (!thing->isGround() && !thing->isGroundBorder() && !thing->isCreature() && !thing->isSplash())
             return thing;
     }
@@ -415,8 +414,7 @@ ThingPtr Tile::getTopUseThing()
 CreaturePtr Tile::getTopCreature()
 {
     CreaturePtr creature;
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if(thing->isLocalPlayer()) // return local player if there is no other creature
             creature = thing->static_self_cast<Creature>();
         else if(thing->isCreature() && !thing->isLocalPlayer())
@@ -477,23 +475,21 @@ ThingPtr Tile::getTopMultiUseThing()
     if(CreaturePtr topCreature = getTopCreature())
         return topCreature;
 
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if(thing->isForceUse())
             return thing;
     }
 
     for(uint i = 0; i < m_things.size(); ++i) {
         ThingPtr thing = m_things[i];
-        if(!thing->isGround() && !thing->isOnBottom() && !thing->isOnTop()) {
+        if(!thing->isGround() && !thing->isGroundBorder() && !thing->isOnBottom() && !thing->isOnTop()) {
             if(i > 0 && thing->isSplash())
                 return m_things[i-1];
             return thing;
         }
     }
 
-    for(uint i = 0; i < m_things.size(); ++i) {
-        ThingPtr thing = m_things[i];
+    for(auto thing: m_things) {
         if(!thing->isGround() && !thing->isOnTop())
             return thing;
     }
@@ -630,13 +626,18 @@ bool Tile::canErase()
     return m_walkingCreatures.empty() && m_effects.empty() && m_things.empty() && m_flags == 0 && m_minimapColor == 0;
 }
 
-bool Tile::hasElevation(int elevation)
+int Tile::getElevation() const
 {
-    int count = 0;
+    int elevation = 0;
     for(const ThingPtr& thing : m_things)
         if(thing->getElevation() > 0)
-            count++;
-    return count >= elevation;
+            elevation++;
+    return elevation;
+}
+
+bool Tile::hasElevation(int elevation)
+{
+    return getElevation() >= elevation;
 }
 
 void Tile::checkTranslucentLight()

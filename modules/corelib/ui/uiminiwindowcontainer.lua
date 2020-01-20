@@ -69,7 +69,7 @@ function UIMiniWindowContainer:fitAll(noRemoveChild)
     end
 
     local child = children[i]
-    if child ~= noRemoveChild then
+    if child ~= noRemoveChild and child:isVisible() then
       local childHeight = child:getHeight()
       sumHeight = sumHeight - childHeight
       table.insert(removeChildren, child)
@@ -83,7 +83,7 @@ function UIMiniWindowContainer:fitAll(noRemoveChild)
 end
 
 function UIMiniWindowContainer:onDrop(widget, mousePos)
-  if widget:getClassName() == 'UIMiniWindow' then
+  if widget.UIMiniWindowContainer then
     local oldParent = widget:getParent()
     if oldParent == self then
       return true

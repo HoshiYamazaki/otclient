@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -123,11 +123,11 @@ void ThingType::serialize(const FileStreamPtr& fin)
         }
     }
 
-    for(uint i = 0; i < m_spritesIndex.size(); i++) {
+    for(int i: m_spritesIndex) {
         if(g_game.getFeature(Otc::GameSpritesU32))
-            fin->addU32(m_spritesIndex[i]);
+            fin->addU32(i);
         else
-            fin->addU16(m_spritesIndex[i]);
+            fin->addU16(i);
     }
 }
 
@@ -268,15 +268,16 @@ void ThingType::unserialize(uint16 clientId, ThingCategory category, const FileS
         stdext::throw_exception(stdext::format("corrupt data (id: %d, category: %d, count: %d, lastAttr: %d)",
             m_id, m_category, count, attr));
 
-    uint8 groupCount = 1;
-    if(category == ThingCategoryCreature && g_game.getClientVersion() >= 1057)
-        groupCount = fin->getU8();
+    bool hasFrameGroups = (category == ThingCategoryCreature && g_game.getFeature(Otc::GameIdleAnimations));
+    uint8 groupCount = hasFrameGroups ? fin->getU8() : 1;
+
+    m_animationPhases = 0;
+    int totalSpritesCount = 0;
 
     for(int i = 0; i < groupCount; ++i) {
-        uint8 frameGroup = FrameGroupDefault;
-        if(category == ThingCategoryCreature && g_game.getClientVersion() >= 1057) {
-            frameGroup = fin->getU8();
-        }
+        uint8 frameGroupType = FrameGroupDefault;
+        if(hasFrameGroups)
+            frameGroupType = fin->getU8();
 
         uint8 width = fin->getU8();
         uint8 height = fin->getU8();
@@ -295,21 +296,25 @@ void ThingType::unserialize(uint16 clientId, ThingCategory category, const FileS
             m_numPatternZ = fin->getU8();
         else
             m_numPatternZ = 1;
-        m_animationPhases = fin->getU8();
+        
+        int groupAnimationsPhases = fin->getU8();
+        m_animationPhases += groupAnimationsPhases;
 
-        if(m_animationPhases > 1 && g_game.getFeature(Otc::GameEnhancedAnimations)) {
+        if(groupAnimationsPhases > 1 && g_game.getFeature(Otc::GameEnhancedAnimations)) {
             m_animator = AnimatorPtr(new Animator);
-            m_animator->unserialize(m_animationPhases, fin);
+            m_animator->unserialize(groupAnimationsPhases, fin);
         }
 
-        int totalSprites = m_size.area() * m_layers * m_numPatternX * m_numPatternY * m_numPatternZ * m_animationPhases;
+        int totalSprites = m_size.area() * m_layers * m_numPatternX * m_numPatternY * m_numPatternZ * groupAnimationsPhases;
 
-        if(totalSprites > 4096)
+        if((totalSpritesCount+totalSprites) > 4096)
             stdext::throw_exception("a thing type has more than 4096 sprites");
 
-        m_spritesIndex.resize(totalSprites);
-        for(int i = 0; i < totalSprites; i++)
+        m_spritesIndex.resize((totalSpritesCount+totalSprites));
+        for(int i = totalSpritesCount; i < (totalSpritesCount+totalSprites); i++)
             m_spritesIndex[i] = g_game.getFeature(Otc::GameSpritesU32) ? fin->getU32() : fin->getU16();
+
+        totalSpritesCount += totalSprites;
     }
 
     m_textures.resize(m_animationPhases);
@@ -323,7 +328,7 @@ void ThingType::exportImage(std::string fileName)
     if(m_null)
         stdext::throw_exception("cannot export null thingtype");
 
-    if(m_spritesIndex.size() == 0)
+    if(m_spritesIndex.empty())
         stdext::throw_exception("cannot export thingtype without sprites");
 
     ImagePtr image(new Image(Size(32 * m_size.width() * m_layers * m_numPatternX, 32 * m_size.height() * m_animationPhases * m_numPatternY * m_numPatternZ)));
@@ -558,4 +563,12 @@ int ThingType::getExactSize(int layer, int xPattern, int yPattern, int zPattern,
     int frameIndex = getTextureIndex(layer, xPattern, yPattern, zPattern);
     Size size = m_texturesFramesOriginRects[animationPhase][frameIndex].size() - m_texturesFramesOffsets[animationPhase][frameIndex].toSize();
     return std::max<int>(size.width(), size.height());
+}
+
+void ThingType::setPathable(bool var)
+{
+    if(var == true)
+        m_attribs.remove(ThingAttrNotPathable);
+    else
+        m_attribs.set(ThingAttrNotPathable, true);
 }

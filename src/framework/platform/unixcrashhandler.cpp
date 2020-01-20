@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2016 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 #define __USE_GNU
 #endif
 
+#include <csignal>
 #include <execinfo.h>
 #include <ucontext.h>
 
@@ -128,10 +129,10 @@ void installCrashHandler()
     sigemptyset (&sa.sa_mask);
     sa.sa_flags = SA_RESTART | SA_SIGINFO;
 
-    sigaction(SIGILL, &sa, NULL);   // illegal instruction
-    sigaction(SIGSEGV, &sa, NULL);  // segmentation fault
-    sigaction(SIGFPE, &sa, NULL);   // floating-point exception
-    sigaction(SIGABRT, &sa, NULL);  // process aborted (asserts)
+    sigaction(SIGILL, &sa, nullptr);   // illegal instruction
+    sigaction(SIGSEGV, &sa, nullptr);  // segmentation fault
+    sigaction(SIGFPE, &sa, nullptr);   // floating-point exception
+    sigaction(SIGABRT, &sa, nullptr);  // process aborted (asserts)
 }
 
 #endif

@@ -1,4 +1,5 @@
-[![Build Status](https://secure.travis-ci.org/edubart/otclient.svg?branch=mobile_port)](http://travis-ci.org/edubart/otclient) [![Join the chat at https://gitter.im/edubart/otclient](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/edubart/otclient?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://secure.travis-ci.org/edubart/otclient.svg?branch=master)](http://travis-ci.org/edubart/otclient) [![Join the chat at https://gitter.im/edubart/otclient](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/edubart/otclient?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Open Source Helpers](https://www.codetriage.com/edubart/otclient/badges/users.svg)](https://www.codetriage.com/edubart/otclient)
+
 ### What is otclient?
 
 Otclient is an alternative Tibia client for usage with otserv. It aims to be complete and flexible,
@@ -6,7 +7,10 @@ for that it uses LUA scripting for all game interface functionality and configur
 similar to CSS for the client interface design. Otclient works with a modular system, this means
 that each functionality is a separated module, giving the possibility to users modify and customize
 anything easily. Users can also create new mods and extend game interface for their own purposes.
-Otclient is written in C++2011, the upcoming C++ standard and heavily scripted in lua.
+Otclient is written in C++11 and heavily scripted in lua.
+
+For a server to connect to, you can build your own with the [forgottenserver](https://github.com/otland/forgottenserver)
+or connect to one listed on [otservlist](https://otservlist.org/).
 
 ## The Mobile Project
 This is a fork of edubart's otclient. The objective of this fork it's to develop a runnable otclient on mobiles devices.
@@ -21,17 +25,10 @@ Current compiling tutorials:
 
 ### Where do I download?
 
-The latest commits compiled for Windows can be found here.
+Compiled for Windows can be found here (but can be outdated):
 * [Windows Builds](http://otland.net/threads/otclient-builds-windows.217977/)
 
-Here is the latest v0.6.5 release compiled for both i686(32 bit) and x86_64(64 bit) machines, with OpenGL renderer.
-This release is compatible with protocols ranges from 7.60 up to 10.31.
-* [For Windows](https://www.dropbox.com/sh/se1okacemoqzjve/XFqFoSKLCg/otclient-win-0.6.5.zip)
-* [For Linux](https://www.dropbox.com/sh/se1okacemoqzjve/xKJL7j6vEo/otclient-linux-0.6.5.tar.gz)
-
-**NOTE:** You will need to download spr/dat files on your own and place them in `data/things/VERSION/` (i.e: `data/things/1041/Tibia.spr`)
-
-Older releases can be downloaded from [here](https://www.dropbox.com/sh/se1okacemoqzjve/-oWK4YFm03)
+**NOTE:** You will need to download spr/dat files on your own and place them in `data/things/VERSION/` (i.e: `data/things/1098/Tibia.spr`)
 
 ### Features
 
@@ -45,20 +42,40 @@ client, instead otclient was designed to be a combination of a framework and tib
 
 ### Compiling
 
-A package with all required libraries for compiling OTClient on Windows can be found here:
-* [For MSVC 2013](https://www.dropbox.com/sh/se1okacemoqzjve/dI4ODbq7OT/otclient-msvc13-libs.zip)
-* [For MingW32](https://www.dropbox.com/sh/se1okacemoqzjve/UAkRCiGXXR/otclient-libs_mingw32-dwarf2.zip)
-
 In short, if you need to compile OTClient, follow these tutorials:
 * [Compiling on Windows](https://github.com/edubart/otclient/wiki/Compiling-on-Windows)
 * [Compiling on Linux](https://github.com/edubart/otclient/wiki/Compiling-on-Linux)
 * [Compiling on OS X](https://github.com/edubart/otclient/wiki/Compiling-on-Mac-OS-X)
 
+### Build and run with Docker
+
+To build the image:
+
+```sh
+docker build -t edubart/otclient .
+```
+
+To run the built image:
+
+```sh
+# Disable access control for the X server.
+xhost +
+
+# Run the container image with the required bindings to the host devices and volumes.
+docker run -it --rm \
+  --env DISPLAY \
+  --volume /tmp/.X11-unix:/tmp/.X11-unix \
+  --device /dev/dri \
+  --device /dev/snd edubart/otclient /bin/bash
+
+# Enable access control for the X server.
+xhost -
+```
 
 ### Need help?
 
 Try to ask questions in [otland](http://otland.net/f494/), now we have a board for the project there,
-or talk with us at #otclient irc.freenode.net
+or talk with us at the gitter chat.
 
 ### Bugs
 
@@ -70,7 +87,7 @@ We encourage you to contribute to otclient! You can make pull requests of any im
 
 ### Contact
 
-Talk directly with us at #otclient irc.freenode.net or send an email directly to the project leader edub4rt@gmail.com
+Talk directly with us at the gitter chat [![Join the chat at https://gitter.im/edubart/otclient](https://img.shields.io/badge/GITTER-join%20chat-green.svg)](https://gitter.im/edubart/otclient?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge).
 
 ### License
 

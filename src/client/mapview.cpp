@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2015 OTClient <https://github.com/edubart/otclient>
+ * Copyright (c) 2010-2020 OTClient <https://github.com/edubart/otclient>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -234,6 +234,7 @@ void MapView::draw(const Rect& rect)
             int flags = 0;
             if(m_drawNames){ flags = Otc::DrawNames; }
             if(m_drawHealthBars) { flags |= Otc::DrawBars; }
+            if(m_drawManaBar) { flags |= Otc::DrawManaBar; }
             creature->drawInformation(p, g_map.isCovered(pos, m_cachedFirstVisibleFloor), rect, flags);
         }
     }
@@ -377,11 +378,11 @@ void MapView::updateVisibleTilesCache(int start)
                         Rect(tpx,       tpy + 1,   1,   qs),
                     };
 
-                    for(int i=0;i<4;++i) {
-                        int sx = std::max<int>(lines[i].left(), area.left());
-                        int ex = std::min<int>(lines[i].right(), area.right());
-                        int sy = std::max<int>(lines[i].top(), area.top());
-                        int ey = std::min<int>(lines[i].bottom(), area.bottom());
+                    for(auto &line: lines) {
+                        int sx = std::max<int>(line.left(), area.left());
+                        int ex = std::min<int>(line.right(), area.right());
+                        int sy = std::max<int>(line.top(), area.top());
+                        int ey = std::min<int>(line.bottom(), area.bottom());
                         for(int qx=sx;qx<=ex;++qx)
                             for(int qy=sy;qy<=ey;++qy)
                                 m_spiral[count++] = Point(qx, qy);
